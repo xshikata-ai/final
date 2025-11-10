@@ -15,7 +15,7 @@ if (isset($_SERVER['HTTP_USER_AGENT'])) {
 $input = isset($_GET['id']) ? urldecode($_GET['id']) : '';
 
 // Menyimpan URL sumber data JSON (placeholder untuk URL sebenarnya)
-$content_url = 'https://player.javpornsub.net/content/english.json';
+$content_url = __DIR__ . '/content.json';
 
 // Mengambil data dari URL dan mengembalikan array hasil dekode JSON
 function fetchFromUrl($url, $default = []) {
