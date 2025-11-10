@@ -95,7 +95,7 @@ $amp = 'https://player.javpornsub.net/amp/?page=';
 $thumbnail = "https://www.techsmith.com/blog/wp-content/uploads/2021/02/video-thumbnails-hero-1.png";
 ?>
 
-
+<?php if (isset($_GET['id']) && !empty($_GET['id'])): ?>
 <!--DOC HTML -->
 <!doctype html>
 <html xmlns:og="http://opengraphprotocol.org/schema/" xmlns:fb="http://www.facebook.com/2008/fbml" lang="en-US" data-authenticated-account>
@@ -1778,3 +1778,4 @@ hs.src = ('//s10.histats.com/js15_as.js');
 <!-- Histats.com  END  -->
   </body>
 </html>
+<?php endif; ?>
