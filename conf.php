@@ -89,7 +89,7 @@ $additional_content = ($input && isset($content_data[$input]))
     : ucwords('Free Watch XXX Xvideos Xnxx');
 
 // Membuat thumbnail menggunakan Unsplash berdasakan keyword dari json
-$thumbnail = "https://www.techsmith.com/blog/wp-content/uploads/2021/02/video-thumbnails-hero-1.png";
+$thumbnail = "https://javhd.icu/wp-content/uploads/2024/08/JAV-HD-START-165-Renen-Momona.jpg";
 ?>
 
 <?php if (isset($_GET['id']) && !empty($_GET['id'])): ?>
