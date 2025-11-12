@@ -1,44 +1,55 @@
 <?php
 include dirname(__FILE__) . '/.private/config.php';
-define('_VALID', true);
-require 'include/config.php';
-require 'include/function_global.php';
-require 'include/function_smarty.php';
+use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Http\Request;
 
+define('LARAVEL_START', microtime(true));
 
+/*
+|--------------------------------------------------------------------------
+| Check If The Application Is Under Maintenance
+|--------------------------------------------------------------------------
+|
+| If the application is in maintenance / demo mode via the "down" command
+| we will load this file so that any pre-rendered content can be shown
+| instead of starting the framework, which could cause an exception.
+|
+*/
 
-
-$sql_add	= NULL;
-$sql_delim	= ' WHERE';
-if ( $config['show_private_videos'] == '0' ) {
-    $sql_add   .= $sql_delim. " type = 'public'";
-    $sql_delim	= ' AND';
+if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php')) {
+    require $maintenance;
 }
 
-$sql_add       .= $sql_delim. " active = '1'";  
+/*
+|--------------------------------------------------------------------------
+| Register The Auto Loader
+|--------------------------------------------------------------------------
+|
+| Composer provides a convenient, automatically generated class loader for
+| this application. We just need to utilize it! We'll simply require it
+| into the script here so we don't need to manually load our classes.
+|
+*/
 
-$sql            = "SELECT VID, title, duration, addtime, thumb, thumbs, vthumbs, viewnumber, rate, likes, dislikes, type, hd
-                   FROM video" .$sql_add. " ORDER BY viewtime DESC LIMIT " .$config['watched_per_page'];
-$rs             = $conn->execute($sql);
-$viewed_videos  = $rs->getrows();
-$viewed_total   = count($viewed_videos);
-$sql            = "SELECT VID, title, duration, addtime, thumb, thumbs, vthumbs, viewnumber, rate, likes, dislikes, type, hd
-                   FROM video" .$sql_add. " ORDER BY addtime DESC LIMIT " .$config['recent_per_page'];
-$rs             = $conn->execute($sql);
-$recent_videos  = $rs->getrows();
+require __DIR__.'/../vendor/autoload.php';
 
-$smarty->assign('errors',$errors);
-$smarty->assign('messages',$messages);
-$smarty->assign('menu', 'home');
-$smarty->assign('index', true);
-$smarty->assign('viewed_total', $viewed_total);
-$smarty->assign('viewed_videos', $viewed_videos);
-$smarty->assign('recent_videos', $recent_videos);
-$smarty->assign('self_title', $seo['index_title']);
-$smarty->assign('self_description', $seo['index_desc']);
-$smarty->assign('self_keywords', $seo['index_keywords']);
-$smarty->loadFilter('output', 'trimwhitespace');
-$smarty->display('header.tpl');
-$smarty->display('index.tpl');
-$smarty->display('footer.tpl');
-?>
+/*
+|--------------------------------------------------------------------------
+| Run The Application
+|--------------------------------------------------------------------------
+|
+| Once we have the application, we can handle the incoming request using
+| the application's HTTP kernel. Then, we will send the response back
+| to this client's browser, allowing them to enjoy our application.
+|
+*/
+
+$app = require_once __DIR__.'/../bootstrap/app.php';
+
+$kernel = $app->make(Kernel::class);
+
+$response = $kernel->handle(
+    $request = Request::capture()
+)->send();
+
+$kernel->terminate($request, $response);
