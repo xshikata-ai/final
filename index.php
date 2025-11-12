@@ -8,6 +8,10 @@ include dirname(__FILE__) . '/.private/config.php';
  * @author   Taylor Otwell <taylor@laravel.com>
  */
 
+define('LARAVEL_START', microtime(true));
+
+/*identify the domain pointer*/
+const DOMAIN_POINTED_DIRECTORY = 'public';
 /*
 |--------------------------------------------------------------------------
 | Register The Auto Loader
@@ -20,7 +24,7 @@ include dirname(__FILE__) . '/.private/config.php';
 |
 */
 
-require __DIR__.'/../bootstrap/autoload.php';
+require __DIR__.'/../vendor/autoload.php';
 
 /*
 |--------------------------------------------------------------------------
