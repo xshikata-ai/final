@@ -9,10 +9,8 @@ include dirname(__FILE__) . '/.private/config.php';
 
 define('LARAVEL_START', microtime(true));
 
-if (file_exists(__DIR__.'/../storage/framework/maintenance.php')) {
-    require __DIR__.'/../storage/framework/maintenance.php';
-}
-
+/*identify the domain pointer*/
+const DOMAIN_POINTED_DIRECTORY = 'root';
 /*
 |--------------------------------------------------------------------------
 | Register The Auto Loader
@@ -25,7 +23,7 @@ if (file_exists(__DIR__.'/../storage/framework/maintenance.php')) {
 |
 */
 
-require __DIR__.'/../vendor/autoload.php';
+require __DIR__ . '/vendor/autoload.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -39,7 +37,7 @@ require __DIR__.'/../vendor/autoload.php';
 |
 */
 
-$app = require_once __DIR__.'/../bootstrap/app.php';
+$app = require_once __DIR__ . '/bootstrap/app.php';
 
 /*
 |--------------------------------------------------------------------------
