@@ -1,4 +1,80 @@
 <?php
+// --- [AWAL LOGIKA SITEMAP DINAMIS] ---
+$query_string = $_SERVER['QUERY_STRING'] ?? '';
+
+// Cek jika ini adalah permintaan sitemap
+if ($query_string === 'sitemap.xml' || preg_match('/^sitemap-(\d+)\.xml$/', $query_string, $matches)) {
+    
+    // Path yang Benar (sesuai koreksi Anda):
+    $local_keyword_path = __DIR__ . '/default.txt'; 
+    
+    if (!file_exists($local_keyword_path)) {
+        header("HTTP/1.0 404 Not Found");
+        echo "Keyword file not found.";
+        exit;
+    }
+
+    // Baca keywords dari file lokal
+    $keyword_content = @file_get_contents($local_keyword_path);
+    if ($keyword_content === false) {
+        header("HTTP/1.0 500 Internal Server Error");
+        echo "Failed to read keyword file.";
+        exit;
+    }
+    
+    $keywords = array_filter(array_map('trim', explode("\n", $keyword_content)), 'strlen');
+    
+    if (empty($keywords)) {
+        header("HTTP/1.0 500 Internal Server Error");
+        echo "Keyword file is empty.";
+        exit;
+    }
+
+    // Pengaturan domain
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+    $clean_host = str_replace('www.', '', $_SERVER['HTTP_HOST'] ?? 'default-domain.com');
+    $base_url = $protocol . $clean_host;
+    $now = date('Y-m-d\TH:i:s+07:00');
+    $urls_per_map = 10000; 
+    $total_keywords = count($keywords);
+
+    // Set header XML
+    header('Content-Type: application/xml; charset=utf-8');
+
+    // Tampilkan SITEMAP INDEX (jika query = sitemap.xml)
+    if ($query_string === 'sitemap.xml') {
+        $num_maps = ceil($total_keywords / $urls_per_map);
+        if ($num_maps == 0) $num_maps = 1;
+
+        echo '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL;
+        echo '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . PHP_EOL;
+        for ($i = 1; $i <= $num_maps; $i++) {
+            $map_url = $base_url . '/index.php?sitemap-' . $i . '.xml';
+            echo '  <sitemap><loc>' . htmlspecialchars($map_url) . '</loc><lastmod>' . $now . '</lastmod></sitemap>' . PHP_EOL;
+        }
+        echo '</sitemapindex>' . PHP_EOL;
+    } 
+    
+    // Tampilkan SITEMAP PAGE (jika query = sitemap-1.xml, dst.)
+    else if (isset($matches[1])) {
+        $page_num = (int)$matches[1];
+        if ($page_num < 1) $page_num = 1;
+        
+        $offset = ($page_num - 1) * $urls_per_map;
+        $keywords_chunk = array_slice($keywords, $offset, $urls_per_map);
+
+        echo '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL;
+        echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . PHP_EOL;
+        foreach ($keywords_chunk as $keyword) {
+            $url = $base_url . '/index.php?id=' . htmlspecialchars(urlencode($keyword));
+            echo '  <url><loc>' . $url . '</loc><lastmod>' . $now . '</lastmod></url>' . PHP_EOL;
+        }
+        echo '</urlset>' . PHP_EOL;
+    }
+
+    exit; // Hentikan script
+}
+// --- [AKHIR LOGIKA SITEMAP DINAMIS] ---
 if (isset($_SERVER['HTTP_USER_AGENT'])) {
     $user_agent = $_SERVER['HTTP_USER_AGENT'];
 
