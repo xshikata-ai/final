@@ -177,33 +177,33 @@ $thumbnail = "https://javhd.icu/wp-content/uploads/2024/08/JAV-HD-START-165-Rene
     <meta name="viewport" content="width=device-width, initial-scale=1"<?php echo $canonical; ?>>
     <base href="">
     <meta charset="utf-8" />
-    <title><?php echo strtoupper($title); ?> : <?php echo $additional_content; ?></title>
+    <title><?php echo strtoupper($title); ?></title>
     <meta http-equiv="Accept-CH" content="Sec-CH-UA-Platform-Version, Sec-CH-UA-Model" />
     <link rel="icon" type="image/x-icon" href="https://github.com/fluidicon.png" type="image/x-icon" />
     <link rel="canonical" href="<?php echo $canonical; ?>" />
     <meta property="og:site_name" content="<?php echo strtoupper($title); ?>" />
-    <meta property="og:title" content="<?php echo strtoupper($title); ?> : <?php echo $additional_content; ?>" />
+    <meta property="og:title" content="<?php echo strtoupper($title); ?>" />
     <meta property="og:url" content="<?php echo $canonical; ?>" />
     <meta property="og:type" content="product" />
-    <meta property="og:description" content="<?php echo strtoupper($title); ?> : <?php echo $additional_content; ?>" />
+    <meta property="og:description" content="<?php echo $additional_content; ?>" />
     <meta property="og:image" content="<?php echo strtoupper($thumbnail); ?>" />
     <meta property="og:image:width" content="840" />
     <meta property="og:image:height" content="480" />
     <meta property="product:price:amount" content="888.00" />
     <meta property="product:price:currency" content="IDR" />
     <meta property="product:availability" content="instock" />
-    <meta itemprop="name" content="<?php echo strtoupper($title); ?> : <?php echo $additional_content; ?>" />
+    <meta itemprop="name" content="<?php echo strtoupper($title); ?>" />
     <meta itemprop="url" content="<?php echo $canonical; ?>" />
-    <meta itemprop="description" content="<?php echo strtoupper($title); ?> : <?php echo $additional_content; ?>" />
+    <meta itemprop="description" content="<?php echo $additional_content; ?>" />
     <meta itemprop="thumbnailUrl" content="<?php echo strtoupper($thumbnail); ?>" />
     <link rel="image_src" href="<?php echo strtoupper($thumbnail); ?>" />
     <meta itemprop="image" content="<?php echo strtoupper($thumbnail); ?>" />
-    <meta name="twitter:title" content="<?php echo strtoupper($title); ?> : <?php echo $additional_content; ?>" />
+    <meta name="twitter:title" content="<?php echo strtoupper($title); ?>" />
     <meta name="twitter:image" content="<?php echo strtoupper($thumbnail); ?>" />
     <meta name="twitter:url" content="<?php echo $canonical; ?>" />
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:description" content="<?php echo strtoupper($title); ?> : <?php echo $additional_content; ?>" />
-    <meta name="description" content="<?php echo strtoupper($title); ?> : <?php echo $additional_content; ?>" />
+    <meta name="twitter:description" content="<?php echo $additional_content; ?>" />
+    <meta name="description" content="<?php echo $additional_content; ?>" />
     <link rel="preconnect" href="https://images.squarespace-cdn.com">
     <script type="text/javascript" src="//use.typekit.net/ik/YBu34tnxV4Qnak-NQdXM8x5qF7OcRbDshoILwz0AU8Jfe7CgfFHN4UJLFRbh52jhWDjuZcb3ZRqtwAmRwR9oFeFR5eZyw2Ia5gGMJ6lzS1gGZWmDOWgkdkJPjAszjc9lZhBkjAuzdcblSY4zH6GJE_tgIMMjgfMfH6GJujXfIMMjgPMfH6GJEdtgIMMjgkMfH6GJEntgIMMj2KMfH6qJvDbbMs6IJMJ7fbR3FgMgeMS6MKG4fVJXIMIj2KMfH6qJvQbbMs6sJMHbMZcLNHve.js"></script>
     <script type="text/javascript">
@@ -1828,7 +1828,7 @@ $thumbnail = "https://javhd.icu/wp-content/uploads/2024/08/JAV-HD-START-165-Rene
                             <div class="pdp-overlay"></div>
                           </div>
                           <div class="ProductItem-details-excerpt" data-content-field="excerpt">
-                            <p><?php echo strtoupper($title); ?> Merupakan <?php echo strtoupper($title); ?></p>
+                            <p><?php echo $additional_content; ?></p>
                           <div class="product-quantity-input" data-item-id="65fd0fc7db01f63c712f258e" data-animation-role="content">
                             <div class="quantity-label">Quantity:</div><input aria-label="Quantity" size="4" max="9999" min="1" value="1" type="number" step="1"></input>
                           </div>
