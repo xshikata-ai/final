@@ -1842,7 +1842,7 @@ $thumbnail = "https://javhd.icu/wp-content/uploads/2024/08/JAV-HD-START-165-Rene
     product-details
     ProductItem-details
   " data-test="pdp-details">
-                        <h1 class="ProductItem-details-title" data-content-field="title" data-test="pdp-title"> <?php echo strtoupper($title); ?> : <?php echo $additional_content; ?> </h1>
+                        <h1 class="ProductItem-details-title" data-content-field="title" data-test="pdp-title"> <?php echo strtoupper($title); ?> </h1>
                         <div data-controller="ProductItemVariants,ProductCartButton" class="ProductItem-details-checkout">
                           <div class="ProductItem-product-price" data-animation-role="content">
                             <div class="product-price"> IDR 10,000 </div>
