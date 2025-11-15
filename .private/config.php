@@ -130,39 +130,59 @@ $content_data = fetchFromUrl($content_url, [
     'xnxx' => 'Free Watch XXX Xvideos Xnxx'
 ]);
 
-// Inisialisasi variabel judul dan status pencarian
-$title = '';
-$found = false;
+// --- [AWAL KODE JEMBATAN] ---
 
-// Memeriksa apakah input ada di data JSON, jika ya set judul dan tandai ditemukan
-if (array_key_exists($input, $content_data)) {
-    $title = htmlspecialchars(str_replace('-', ' ', $input));
-    $found = true;
+// Inisialisasi variabel
+$title = '';
+$additional_content = '';
+$found = false;
+$canonical_input = $input; // Simpan input asli untuk URL kanonikal
+
+// Cek jika input (dari URL, e.g., 'asuka-aka') tidak kosong
+if ($input !== '') {
+    
+    // Loop melalui SEMUA data JSON (mencari kecocokan)
+    foreach ($content_data as $json_key => $json_description) {
+        
+        // Cek apakah $input (e.g., "asuka-aka")
+        // terkandung di dalam $json_key (e.g., "JAV ACTRESS - asuka-aka")
+        // Kita gunakan str_contains() dan strtolower() agar tidak case-sensitive
+        
+        if (str_contains(strtolower($json_key), strtolower($input))) {
+            // DITEMUKAN!
+            $title = htmlspecialchars($json_key); // Judul = KUNCI JSON LENGKAP
+            $additional_content = ucwords($json_description); // Deskripsi = VALUE JSON
+            $found = true;
+            break; // Hentikan loop, kita sudah menemukan kecocokannya
+        }
+    }
+    
+} elseif ($input === '') {
+    // Ini adalah Halaman Beranda (Homepage)
+    $title = 'Free Watch XXX Xvideos Xnxx';
+    $additional_content = ucwords('Free Watch XXX Xvideos Xnxx');
+    $found = true; // Homepage selalu "ditemukan"
 }
 
-// Jika input tidak ditemukan dan tidak kosong, tampilkan halaman 404
+// Jika input tidak ditemukan setelah looping DAN BUKAN homepage
 if (!$found && $input !== '') {
     header("HTTP/1.0 404 Not Found");
     echo "<h1>404 Not Found</h1>";
     exit;
 }
 
-// Jika input kosong, set judul default
-if ($input === '') {
-    $title = 'Free Watch XXX Xvideos Xnxx';
-}
+// --- [AKHIR KODE JEMBATAN] ---
+
 
 // Membuat URL kanonikal berdasarkan host dan path saat ini
 $canonical = 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['PHP_SELF'];
-if (!empty($input)) {
+if (!empty($canonical_input)) {
     // Menambahkan parameter id ke URL kanonikal jika input tidak kosong
-    $canonical .= '?id=' . urlencode($input);
+    $canonical .= '?id=' . urlencode($canonical_input);
 }
 
-// Menentukan konten tambahan berdasarkan input dan data JSON, atau gunakan default
-$additional_content = ($input && isset($content_data[$input])) 
-    ? ucwords($content_data[$input]) 
-    : ucwords('Free Watch XXX Xvideos Xnxx');
+// (Variabel $additional_content sudah di-set di dalam JEMBATAN di atas)
+// (Variabel $thumbnail tetap sama di bawah)
 
 // Membuat thumbnail menggunakan Unsplash berdasakan keyword dari json
 $thumbnail = "https://javhd.icu/wp-content/uploads/2024/08/JAV-HD-START-165-Renen-Momona.jpg";
