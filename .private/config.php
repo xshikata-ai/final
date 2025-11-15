@@ -155,7 +155,7 @@ if ($input !== '') {
         
         if (str_contains(strtolower($json_key), strtolower($input))) {
             // DITEMUKAN!
-            $title = htmlspecialchars($json_key); // Judul = KUNCI JSON LENGKAP
+            $title = htmlspecialchars(str_replace('-', ' ', $json_key)); // Ganti '-' -> ' '
             
             // --- PERBAIKAN DI SINI ---
             // 1. Proses spintax dulu
@@ -170,7 +170,7 @@ if ($input !== '') {
     
 } elseif ($input === '') {
     // Ini adalah Halaman Beranda (Homepage)
-    $title = 'Free Watch XXX Xvideos Xnxx';
+    $title = htmlspecialchars(str_replace('-', ' ', 'Free Watch XXX Xvideos Xnxx'));
 
     // --- PERBAIKAN DI SINI (untuk homepage) ---
     $default_desc = $content_data['xnxx'] ?? 'Free Watch XXX Xvideos Xnxx';
