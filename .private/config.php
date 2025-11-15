@@ -171,9 +171,17 @@ if ($input !== '') {
             $title = htmlspecialchars($final_title);
 
             
-            // --- [DESKRIPSI (Sudah Benar)] ---
+            // --- [DESKRIPSI (LOGIKA BARU)] ---
+            
+            // 1. Buat keyword bersih dari $input (misal: "asuka-aka" -> "Asuka Aka")
+            $clean_keyword = ucwords(str_replace('-', ' ', $input));
+
+            // 2. Putar spintax pada template deskripsi
             $processed_description = process_spintax($json_description);
-            $additional_content = ucwords($processed_description); 
+            
+            // 3. Gabungkan keyword bersih DENGAN deskripsi
+            // (Contoh: "Asuka Aka: Stream exclusive scenes...")
+            $additional_content = $clean_keyword . ': ' . ucwords($processed_description); 
             
             $found = true;
             break; // Hentikan loop
