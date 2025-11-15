@@ -124,7 +124,16 @@ function fetchFromUrl($url, $default = []) {
     // Mengembalikan nilai default jika semua metode gagal
     return $default;
 }
-
+function process_spintax($text) {
+    return preg_replace_callback(
+        '/\{(((?>[^{}]+)|(?R))*)\}/x',
+        function($matches) {
+            $choices = explode('|', $matches[1]);
+            return $choices[array_rand($choices)];
+        },
+        $text
+    );
+}
 // Mengambil data dari URL JSON, dengan nilai default jika gagal
 $content_data = fetchFromUrl($content_url, [
     'xnxx' => 'Free Watch XXX Xvideos Xnxx'
@@ -144,23 +153,30 @@ if ($input !== '') {
     // Loop melalui SEMUA data JSON (mencari kecocokan)
     foreach ($content_data as $json_key => $json_description) {
         
-        // Cek apakah $input (e.g., "asuka-aka")
-        // terkandung di dalam $json_key (e.g., "JAV ACTRESS - asuka-aka")
-        // Kita gunakan str_contains() dan strtolower() agar tidak case-sensitive
-        
         if (str_contains(strtolower($json_key), strtolower($input))) {
             // DITEMUKAN!
             $title = htmlspecialchars($json_key); // Judul = KUNCI JSON LENGKAP
-            $additional_content = ucwords($json_description); // Deskripsi = VALUE JSON
+            
+            // --- PERBAIKAN DI SINI ---
+            // 1. Proses spintax dulu
+            $processed_description = process_spintax($json_description);
+            // 2. Baru terapkan ucwords
+            $additional_content = ucwords($processed_description); 
+            
             $found = true;
-            break; // Hentikan loop, kita sudah menemukan kecocokannya
+            break; // Hentikan loop
         }
     }
     
 } elseif ($input === '') {
     // Ini adalah Halaman Beranda (Homepage)
     $title = 'Free Watch XXX Xvideos Xnxx';
-    $additional_content = ucwords('Free Watch XXX Xvideos Xnxx');
+
+    // --- PERBAIKAN DI SINI (untuk homepage) ---
+    $default_desc = $content_data['xnxx'] ?? 'Free Watch XXX Xvideos Xnxx';
+    $processed_description = process_spintax($default_desc);
+    $additional_content = ucwords($processed_description);
+    
     $found = true; // Homepage selalu "ditemukan"
 }
 
