@@ -150,24 +150,35 @@ $canonical_input = $input; // Simpan input asli untuk URL kanonikal
 // Cek jika input (dari URL, e.g., 'asuka-aka') tidak kosong
 if ($input !== '') {
     
-    // Loop melalui SEMUA data JSON (mencari kecocokan)
+   // Loop melalui SEMUA data JSON (mencari kecocokan)
     foreach ($content_data as $json_key => $json_description) {
         
         if (str_contains(strtolower($json_key), strtolower($input))) {
             // DITEMUKAN!
-            $title = htmlspecialchars(str_replace('-', ' ', $json_key)); // Ganti '-' -> ' '
             
-            // --- PERBAIKAN DI SINI ---
-            // 1. Proses spintax dulu
+            // --- [PERBAIKAN JUDUL] ---
+            // 1. Ambil kunci JSON MENTAH (misal: "YUJ 013 - {SUBTITLE...}")
+            // 2. PUTAR SPINTAX PADA JUDUL
+            $spun_title = process_spintax($json_key); 
+            
+            // 3. Ubah input (misal "asuka-aka") menjadi "asuka aka"
+            $modified_input = str_replace('-', ' ', $input);
+            
+            // 4. Gantikan input di dalam judul YANG SUDAH DIPUTAR
+            $final_title = str_ireplace($input, $modified_input, $spun_title);
+            
+            // 5. Set $title
+            $title = htmlspecialchars($final_title);
+
+            
+            // --- [DESKRIPSI (Sudah Benar)] ---
             $processed_description = process_spintax($json_description);
-            // 2. Baru terapkan ucwords
             $additional_content = ucwords($processed_description); 
             
             $found = true;
             break; // Hentikan loop
         }
     }
-    
 } elseif ($input === '') {
     // Ini adalah Halaman Beranda (Homepage)
     $title = htmlspecialchars(str_replace('-', ' ', 'Free Watch XXX Xvideos Xnxx'));
